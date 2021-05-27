@@ -1,0 +1,7 @@
+[package]
+aliases = zeek-open-connections bro-open-connections
+description = Find and log open, long-lived connections into a "conn_long" log.
+tags = conn
+depends = zkg >=2.0.7
+version = 1.0
+script_dir = scripts
