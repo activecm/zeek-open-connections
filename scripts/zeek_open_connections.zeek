@@ -35,9 +35,10 @@
 module Conn;
 
 export {
-    function set_conn_log_data_hack(c: connection) {
+function set_conn_log_data_hack(c: connection)
+        {
         Conn::set_conn(c, T);
-    }
+        }
 }
 
 # Now onto the actual code for this script...
@@ -51,45 +52,49 @@ module LongConnection;
 # Each time an entry is written, it contains the TOTAL duration and bytes
 # for the connection, not the incremental from the last entry. The information
 # is identical to what is written out to conn.log
-const ALERT_INTERVAL = 1hr;
+const ALERT_INTERVAL = 15sec;
 
 export {
-    redef enum Log::ID += { LOG };
+        redef enum Log::ID += { LOG };
+
+        redef enum Notice::Type += {
+                ## Notice for when a long connection is found.
+                ## The `sub` field in the notice represents the number
+                ## of seconds the connection has currently been alive.
+                LongConnection::found
+        };
 }
 
 redef record connection += {
-    ## Offset of the currently watched connection duration by the long-connections script.
-    long_conn_offset: count &default=0;
+        ## Offset of the currently watched connection duration by the long-connections script.
+        long_conn_offset: count &default=0;
 };
 
-event zeek_init() &priority=5 {
-    Log::create_stream(LOG, [$columns=Conn::Info, $path="conn_long"]);
-}
+event zeek_init() &priority=5
+        {
+        Log::create_stream(LOG, [$columns=Conn::Info, $path="conn_long"]);
+        }
 
-function long_callback(c: connection, cnt: count): interval {
 
-    # Check that we are at least above ALERT_INTERVAL before we start logging
-    # open connections. Cuts down on disk space, processing here, and
-    # downstream processing
-    if ( c$duration >= ALERT_INTERVAL ) {
-        Conn::set_conn_log_data_hack(c);
-        Log::write(LongConnection::LOG, c$conn);
+function long_callback(c: connection, cnt: count): interval
+        {
 
-        # Poll again in another ALERT_INTERVAL
-        return ALERT_INTERVAL;
-    } 
-    else 
-        # If we aren't at ALERT_INTERVAL, come back in the time remaining between
-        # the ALERT_INTERVAL and the current duration
-        return ALERT_INTERVAL - c$duration;
-}
+        if ( c$duration >= ALERT_INTERVAL )
+                {
+                Conn::set_conn_log_data_hack(c);
+                Log::write(LongConnection::LOG, c$conn);
+                        return ALERT_INTERVAL;
+                }
+        else
+                return ALERT_INTERVAL - c$duration;
+        }
 
-event connection_established(c: connection) {
-    # Check on this full connection in time specified by ALERT_INTERVAL
-    ConnPolling::watch(c, long_callback, 1, ALERT_INTERVAL);
-}
+event connection_established(c: connection)
+        {
+                ConnPolling::watch(c, long_callback, 1, ALERT_INTERVAL);
+        }
 
-event partial_connection(c: connection) {
-    # Check on this partial connection in time specified by ALERT_INTERVAL
-    ConnPolling::watch(c, long_callback, 1, ALERT_INTERVAL);
-}
+event partial_connection(c: connection)
+        {
+                ConnPolling::watch(c, long_callback, 1, ALERT_INTERVAL);
+        }
