@@ -43,7 +43,7 @@ function set_conn_log_data_hack(c: connection)
 
 # Now onto the actual code for this script...
 
-module LongConnection;
+module OpenConnection;
 
 # Set this to the interval at which you want to alert on
 # open connections. 1hr means that an open connection will
@@ -61,7 +61,7 @@ export {
                 ## Notice for when a long connection is found.
                 ## The `sub` field in the notice represents the number
                 ## of seconds the connection has currently been alive.
-                LongConnection::found
+                OpenConnection::found
         };
 }
 
@@ -82,7 +82,7 @@ function long_callback(c: connection, cnt: count): interval
         if ( c$duration >= ALERT_INTERVAL )
                 {
                 Conn::set_conn_log_data_hack(c);
-                Log::write(LongConnection::LOG, c$conn);
+                Log::write(OpenConnection::LOG, c$conn);
                         return ALERT_INTERVAL;
                 }
         else
