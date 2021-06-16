@@ -72,7 +72,7 @@ redef record connection += {
 
 event zeek_init() &priority=5
         {
-        Log::create_stream(LOG, [$columns=Conn::Info, $path="conn_long"]);
+        Log::create_stream(LOG, [$columns=Conn::Info, $path="open_conn"]);
         }
 
 
@@ -89,12 +89,9 @@ function long_callback(c: connection, cnt: count): interval
                 return ALERT_INTERVAL - c$duration;
         }
 
-event connection_established(c: connection)
+#https://docs.zeek.org/en/v4.0.2/scripts/base/bif/event.bif.zeek.html#id-new_connection
+event new_connection(c: connection)
         {
                 ConnPolling::watch(c, long_callback, 1, ALERT_INTERVAL);
         }
 
-event partial_connection(c: connection)
-        {
-                ConnPolling::watch(c, long_callback, 1, ALERT_INTERVAL);
-        }
