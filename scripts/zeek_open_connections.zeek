@@ -89,12 +89,16 @@ function long_callback(c: connection, cnt: count): interval
                 return ALERT_INTERVAL - c$duration;
         }
 
-event connection_established(c: connection)
+#Prefer connection_successful to new_connection in order to filter out SYN scans
+#https://github.com/zeek/zeek/blob/release/3.1/CHANGES#L1279
+@if ( Version::number >= 30100 )
+#https://docs.zeek.org/en/v3.1.0/scripts/base/bif/event.bif.zeek.html#id-connection_successful
+event connection_successful(c: connection)
+@else
+#https://docs.zeek.org/en/v3.1.0/scripts/base/bif/event.bif.zeek.html#id-new_connection
+event new_connection(c: connection)
+@endif
         {
                 ConnPolling::watch(c, long_callback, 1, ALERT_INTERVAL);
         }
 
-event partial_connection(c: connection)
-        {
-                ConnPolling::watch(c, long_callback, 1, ALERT_INTERVAL);
-        }
