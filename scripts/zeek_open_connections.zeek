@@ -47,7 +47,7 @@ module OpenConnection;
 
 # Set this to the interval at which you want to alert on
 # open connections. 1hr means that an open connection will
-# be written to the conn_long log after 1hr has passed
+# be written to the open_conn log after 1hr has passed
 # and then every hour after that until it closes (2hrs, 3hrs, 4hrs, etc.).
 # Each time an entry is written, it contains the TOTAL duration and bytes
 # for the connection, not the incremental from the last entry. The information
@@ -55,7 +55,7 @@ module OpenConnection;
 const ALERT_INTERVAL = 1hr;
 
 export {
-        redef enum Log::ID += { LOG };
+        redef enum Log::ID += { LOG, SSL_LOG };
 
         redef enum Notice::Type += {
                 ## Notice for when a long connection is found.
@@ -65,14 +65,10 @@ export {
         };
 }
 
-redef record connection += {
-        ## Offset of the currently watched connection duration by the long-connections script.
-        long_conn_offset: count &default=0;
-};
-
 event zeek_init() &priority=5
         {
         Log::create_stream(LOG, [$columns=Conn::Info, $path="open_conn"]);
+        Log::create_stream(SSL_LOG, [$columns=SSL::Info, $path="open_ssl"]);
         }
 
 
@@ -83,7 +79,11 @@ function long_callback(c: connection, cnt: count): interval
                 {
                 Conn::set_conn_log_data_hack(c);
                 Log::write(OpenConnection::LOG, c$conn);
-                        return ALERT_INTERVAL;
+                if ( c?$ssl && |c$ssl$server_name| > 0 )
+                        {
+                        Log::write(OpenConnection::SSL_LOG, c$ssl);
+                        }
+                return ALERT_INTERVAL;
                 }
         else
                 return ALERT_INTERVAL - c$duration;

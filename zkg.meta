@@ -1,6 +1,6 @@
 [package]
 aliases = zeek-open-connections bro-open-connections
-description = Find and log open, long-lived connections into a "conn_long" log.
+description = Find and log open, long-lived connections into "open_conn" and "open_ssl" logs.
 tags = conn
 depends = zkg >=2.0.7
 version = 1.0
