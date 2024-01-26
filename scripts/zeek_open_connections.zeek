@@ -55,7 +55,7 @@ module OpenConnection;
 const ALERT_INTERVAL = 1hr;
 
 export {
-        redef enum Log::ID += { LOG, SSL_LOG };
+        redef enum Log::ID += { LOG, SSL_LOG, HTTP_LOG };
 
         redef enum Notice::Type += {
                 ## Notice for when a long connection is found.
@@ -69,6 +69,7 @@ event zeek_init() &priority=5
         {
         Log::create_stream(LOG, [$columns=Conn::Info, $path="open_conn"]);
         Log::create_stream(SSL_LOG, [$columns=SSL::Info, $path="open_ssl"]);
+        Log::create_stream(HTTP_LOG, [$columns=HTTP::Info, $path="open_http"]);
         }
 
 
@@ -79,6 +80,7 @@ function long_callback(c: connection, cnt: count): interval
                 {
                 Conn::set_conn_log_data_hack(c);
                 Log::write(OpenConnection::LOG, c$conn);
+                Log::write(OpenConnection::HTTP_LOG, c$http);
                 if ( c?$ssl && |c$ssl$server_name| > 0 )
                         {
                         Log::write(OpenConnection::SSL_LOG, c$ssl);
