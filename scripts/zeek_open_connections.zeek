@@ -80,7 +80,10 @@ function long_callback(c: connection, cnt: count): interval
                 {
                 Conn::set_conn_log_data_hack(c);
                 Log::write(OpenConnection::LOG, c$conn);
-                Log::write(OpenConnection::HTTP_LOG, c$http);
+                if ( c?$http )
+                        {
+	                Log::write(OpenConnection::HTTP_LOG, c$http);
+                        }
                 if ( c?$ssl && |c$ssl$server_name| > 0 )
                         {
                         Log::write(OpenConnection::SSL_LOG, c$ssl);
