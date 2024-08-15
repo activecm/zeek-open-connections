@@ -67,36 +67,47 @@ export {
 
 event zeek_init() &priority=5
         {
+                
         Log::create_stream(LOG, [$columns=Conn::Info, $path="open_conn"]);
         Log::create_stream(SSL_LOG, [$columns=SSL::Info, $path="open_ssl"]);
         Log::create_stream(HTTP_LOG, [$columns=HTTP::Info, $path="open_http"]);
+                
         }
 
 
 function long_callback(c: connection, cnt: count): interval
         {
-
-        if ( c$duration >= ALERT_INTERVAL )
+        # only process traffic if the packet came from a live interface
+        # https://docs.zeek.org/en/master/scripts/base/init-bare.zeek.html#type-PacketSource
+        local ps = packet_source();
+        if ( ps?$live && ps$live )
                 {
-                Conn::set_conn_log_data_hack(c);
-                Log::write(OpenConnection::LOG, c$conn);
-                if ( c?$http )
+                if ( c$duration >= ALERT_INTERVAL )
                         {
-	                Log::write(OpenConnection::HTTP_LOG, c$http);
+                        Conn::set_conn_log_data_hack(c);
+                        Log::write(OpenConnection::LOG, c$conn);
+                        if ( c?$http )
+                                {
+        	                Log::write(OpenConnection::HTTP_LOG, c$http);
+                                }
+                        if ( c?$ssl && |c$ssl$server_name| > 0 )
+                                {
+                                Log::write(OpenConnection::SSL_LOG, c$ssl);
+                                }
+                        return ALERT_INTERVAL;
                         }
-                if ( c?$ssl && |c$ssl$server_name| > 0 )
-                        {
-                        Log::write(OpenConnection::SSL_LOG, c$ssl);
-                        }
-                return ALERT_INTERVAL;
+                else
+                        return ALERT_INTERVAL - c$duration;
                 }
-        else
-                return ALERT_INTERVAL - c$duration;
         }
 
-#https://docs.zeek.org/en/v4.0.2/scripts/base/bif/event.bif.zeek.html#id-new_connection
+# https://docs.zeek.org/en/master/scripts/base/bif/event.bif.zeek.html#id-new_connection
 event new_connection(c: connection)
         {
+        local ps = packet_source();
+        if ( ps?$live && ps$live )
+                {
                 ConnPolling::watch(c, long_callback, 1, ALERT_INTERVAL);
+                }
         }
 
