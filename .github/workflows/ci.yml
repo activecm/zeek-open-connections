@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        zeek-version:
+          - "6.2.1"
+          - "7.2.2"
+          - "8.1.1"
+    container:
+      image: zeek/zeek:${{ matrix.zeek-version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Verify script loads without errors
+        run: zeek -a scripts/__load__.zeek

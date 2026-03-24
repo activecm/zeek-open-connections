@@ -1,6 +1,5 @@
 # Authors: Active Countermeasures
-# This script is based on: https://github.com/corelight/zeek-long-connections/
-# As this script was based upon the Corelight script, we are obligated to include the following:
+# Based on: https://github.com/corelight/zeek-long-connections/
 # Copyright (c) 2017, Corelight, Inc. All rights reserved.
 
 # Redistribution and use in source and binary forms, with or without
@@ -31,17 +30,15 @@
 @load base/protocols/conn
 @load base/utils/time
 
-# This is probably not so great to reach into the Conn namespace..
+# Access Conn namespace to populate connection log data for open connections
 module Conn;
 
 export {
-function set_conn_log_data_hack(c: connection)
+function set_conn_log_data(c: connection)
         {
         Conn::set_conn(c, T);
         }
 }
-
-# Now onto the actual code for this script...
 
 module OpenConnection;
 
@@ -84,7 +81,7 @@ function long_callback(c: connection, cnt: count): interval
                 {
                 if ( c$duration >= ALERT_INTERVAL )
                         {
-                        Conn::set_conn_log_data_hack(c);
+                        Conn::set_conn_log_data(c);
                         Log::write(OpenConnection::LOG, c$conn);
                         if ( c?$http )
                                 {

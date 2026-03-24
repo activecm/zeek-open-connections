@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        zeek-version:
+          - "6.2.1"
+          - "7.2.2"
+          - "8.1.1"
+    container:
+      image: zeek/zeek:${{ matrix.zeek-version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Verify script loads without errors
+        run: zeek -a scripts/__load__.zeek
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
